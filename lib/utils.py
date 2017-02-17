@@ -33,9 +33,9 @@ def count_reports(sc, pings, h):
     reduced.foreach(lambda p: accum.add(p[histogram].sum()))
     return accum
 
-def compare_counts(pings, a, b):
-    ca = count_reports(pings, a).value
-    cb = count_reports(pings, b).value
+def compare_counts(sc, pings, a, b):
+    ca = count_reports(sc, pings, a).value
+    cb = count_reports(sc, pings, b).value
     print ca, cb, ca/cb
 
     

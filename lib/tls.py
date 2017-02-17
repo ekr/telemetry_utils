@@ -429,10 +429,20 @@ ERRORS = {
 }
    
 def categorize(e):
-    ERROR_RESULTS = [
+    RETRY_RESULTS = [
+        "SSL_ERROR_BAD_MAC_ALERT",
+        "SSL_ERROR_BAD_MAC_READ",
+        "SSL_ERROR_HANDSHAKE_FAILURE_ALERT",
+        "SSL_ERROR_HANDSHAKE_UNEXPECTED_ALERT",
+        "SSL_ERROR_ILLEGAL_PARAMETER_ALERT",
+        "SSL_ERROR_NO_CYPHER_OVERLAP",
+        "SSL_ERROR_UNSUPPORTED_VERSION",
+        "SSL_ERROR_PROTOCOL_VERSION_ALERT",
+        "SSL_ERROR_BAD_HANDSHAKE_HASH_VALUE",
+        "SSL_ERROR_DECODE_ERROR_ALERT",
         "PR_CONNECT_RESET_ERROR",
         "PR_END_OF_FILE_ERROR",
-        "PR_CONNECT_ABORTED_ERROR"
+        "SSL_ERROR_INTERNAL_ERROR_ALERT",
     ]
 
     FAIL_RESULTS = [
@@ -445,8 +455,8 @@ def categorize(e):
 
     if e == "SUCCESS":
         return e
-    if e in ERROR_RESULTS:
-        return "ERROR"
+    if e in RETRY_RESULTS:
+        return "RETRY"
     if e in FAIL_RESULTS:
         return "FAIL"
     return "UNKNOWN"
@@ -458,7 +468,7 @@ def translate_errors(errors):
     CATEGORIES = {
         "SUCCESS":0,
         "FAIL":0,
-        "ERROR":0,
+        "RETRY":0,
         "UNKNOWN":0,
     }
     
