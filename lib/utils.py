@@ -27,6 +27,7 @@ def payload(h):
     return "payload/histograms/%s"%h
 
 def count_reports(pings, h):
+    global sc
     histogram = payload(h)
     reduced = pings.filter(lambda p: filter_for_histogram(p, histogram))
     accum = sc.accumulator(0)
@@ -45,6 +46,7 @@ def accum_histogram(accums, hist):
 
 
 def sum_histogram(pings, buckets, h):
+    global sc
     histogram = payload(h)
     reduced = pings.filter(lambda p: filter_for_histogram(p, histogram))
     accums = []
