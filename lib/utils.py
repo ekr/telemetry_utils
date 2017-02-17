@@ -14,3 +14,6 @@ def is_not_in_tls_experiment(ping):
         return experiment["id"] != "tls13-compat-ff51@experiments.mozilla.org"
     except:
         return True
+
+def foo():
+    print "FOO"
