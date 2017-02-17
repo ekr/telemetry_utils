@@ -18,6 +18,8 @@ import warnings; warnings.simplefilter('ignore')
 !rm -rf telemetry_utils && git clone https://github.com/ekr/telemetry_utils
 sc.addPyFile("telemetry_utils/lib/utils.py")
 import utils
+sc.addPyFile("telemetry_utils/lib/tls.py")
+import tls
 
 properties_to_gather=[utils.payload("SSL_HANDSHAKE_VERSION"), utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"), utils.payload("SSL_HANDSHAKE_RESULT")]
 nightly_pings = (Dataset.from_source('telemetry')
@@ -28,4 +30,6 @@ nightly_pings = (Dataset.from_source('telemetry')
                 .records(sc, sample=0.02))
 nightly_pings = get_pings_properties(nightly_pings, properties_to_gather)
 
-utils.sum_histogram(sc, nightly_pings, 800, "SSL_HANDSHAKE_RESULT")
+x = utils.sum_histogram(sc, nightly_pings, 800, "SSL_HANDSHAKE_RESULT")
+tls.translate_errors(x)
+
