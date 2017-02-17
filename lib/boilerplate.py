@@ -27,7 +27,7 @@ nightly_pings = (Dataset.from_source('telemetry')
                 .where(appName='Firefox')
                 .where(appUpdateChannel='nightly')
                 .where(appBuildId=lambda x: x >= "20170215000000")
-                .records(sc, sample=0.02))
+                .records(sc, sample=1))
 nightly_pings = get_pings_properties(nightly_pings, properties_to_gather)
 
 x = utils.sum_histogram(sc, nightly_pings, 800, "SSL_HANDSHAKE_RESULT")

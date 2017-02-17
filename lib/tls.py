@@ -475,3 +475,6 @@ def translate_errors(errors):
     print    
     for c in CATEGORIES:
         print c, CATEGORIES[c],float(CATEGORIES[c])/float(SUM)    
+
+    print
+    print "TOTAL", SUM
