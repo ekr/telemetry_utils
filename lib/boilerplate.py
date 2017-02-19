@@ -21,7 +21,7 @@ import utils
 sc.addPyFile("telemetry_utils/lib/tls.py")
 import tls
 
-properties_to_gather=[utils.payload("SSL_HANDSHAKE_VERSION"), utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"), utils.payload("SSL_HANDSHAKE_RESULT")]
+properties_to_gather=[utils.payload("SSL_HANDSHAKE_VERSION"), utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"), utils.payload("SSL_HANDSHAKE_RESULT"), utils.payload("SSL_TLS13_INTOLERANCE_REASON_PRE")]
 nightly_pings = (Dataset.from_source('telemetry')
                 .where(docType='main')
                 .where(appName='Firefox')

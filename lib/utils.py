@@ -37,7 +37,7 @@ def compare_counts(sc, pings, a, b):
     ca = count_reports(sc, pings, a).value
     cb = count_reports(sc, pings, b).value
     print ca, cb, ca/cb
-
+    return [ca, cb]
     
 def accum_histogram(accums, hist):
     for i in range(0, len(hist)):
