@@ -16,9 +16,9 @@ def is_not_in_tls_experiment(ping):
         return True
 
 def filter_for_histogram(p, histogram):
-    if p[histogram] is None:
-        return False
     try:
+        if p[histogram] is None:
+            return False
         return p[histogram].sum() > 0
     except:
         return False
@@ -57,3 +57,12 @@ def sum_histogram(sc, pings, buckets, h):
             res[i] = accums[i].value
     return res
 
+def get_pings_by_version(sc, channel, vernum):
+    p = (Dataset.from_source('telemetry-sample')
+         .where(docType='main')
+         .where(appName='Firefox')
+         .where(appUpdateChannel=channel)
+         .where(appVersion=lambda x: x >= "%d."%vernum and x < "%d."%(vernum+1))
+         .records(sc))
+    return get_pings_properties(p, properties_to_gather)
+    

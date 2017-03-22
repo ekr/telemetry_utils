@@ -21,7 +21,11 @@ import utils
 sc.addPyFile("telemetry_utils/lib/tls.py")
 import tls
 
-properties_to_gather=[utils.payload("SSL_HANDSHAKE_VERSION"), utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"), utils.payload("SSL_HANDSHAKE_RESULT"), utils.payload("SSL_TLS13_INTOLERANCE_REASON_PRE")]
+properties_to_gather=[utils.payload("SSL_HANDSHAKE_VERSION"), utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"), utils.payload("SSL_HANDSHAKE_RESULT"), utils.payload("SSL_TLS13_INTOLERANCE_REASON_PRE"), utils.payload("HTTP_CHANNEL_DISPOSITION")]
+
+
+
+
 nightly_pings = (Dataset.from_source('telemetry')
                 .where(docType='main')
                 .where(appName='Firefox')
@@ -54,6 +58,18 @@ beta52_pings = (Dataset.from_source('telemetry-sample')
 beta52_pings = get_pings_properties(beta50_pings, properties_to_gather)
 res52 = utils.compare_counts(sc, beta50_pings, "SSL_TLS13_INTOLERANCE_REASON_PRE", "SSL_HANDSHAKE_VERSION")
 print res52
+
+
+release52_pings = (Dataset.from_source('telemetry-sample')
+                .where(docType='main')
+                .where(appName='Firefox')
+                .where(appUpdateChannel='release')
+                .where(appVersion=lambda x: x >= "52." and x < "53.")
+                .records(sc))
+release52_pings = get_pings_properties(release52_pings, properties_to_gather)
+
+
+
 
 
 ds = Dataset.from_source('telemetry').where(docType='OTHER')
@@ -112,4 +128,8 @@ def tls_exp_status(pings):
 
 
 def tls_status_handle_ping(accums, p):
-    accums[p["payload"]["status"]].add(1)
+    try:
+        accums[p["payload"]["status"]].add(1)
+    except:
+        pass
+    
