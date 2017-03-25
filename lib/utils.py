@@ -59,6 +59,26 @@ def sum_histogram(sc, pings, buckets, h):
             res[i] = accums[i].value
     return res
 
+def accum_histogram_experiment(accums, p, arm_func, histogram):
+    acc = accums[arm_func(p)]
+    accum_histogram(acc, p[histogram])
+    
+def sum_histogram_experiment(sc, pings, buckets, h, arm_func):
+    histogram = payload(h)
+    reduced = pings.filter(lambda p: filter_for_histogram(p, histogram))
+    accums = {}
+    arms = ["control", "treatment"]
+    for a in arms:
+        accums[a] = []
+        for i in range(0, buckets):
+            accums[a].append(sc.accumulator(0))
+    reduced.foreach(lambda p: accum_histogram(accums, p[histogram]))
+    res = {}
+    for i in range(0, buckets):
+        if accums[i].value != 0:
+            res[i] = accums[i].value
+    return res
+
 def get_pings_by_version(sc, channel, vernum):
     p = (Dataset.from_source('telemetry-sample')
          .where(docType='main')

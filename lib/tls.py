@@ -1,3 +1,6 @@
+import hashlib
+import struct
+
 ERRORS = {
     0: "SUCCESS",
     1: "SSL_ERROR_US_ONLY_SERVER",
@@ -489,3 +492,12 @@ def translate_errors(errors):
 
     print
     print "TOTAL", SUM
+
+
+def predict_arm(x):
+    h = hashlib.sha256(x["clientId"] + "tls13-comparison-all-v1@mozilla.org")
+    variate = (struct.unpack(">L", h.digest()[0:4])[0]) / 0xffffffff
+    if variate < 0.5:
+        return "treatment"
+    else:
+        return "control"
