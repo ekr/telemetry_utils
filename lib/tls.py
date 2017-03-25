@@ -478,7 +478,7 @@ def translate_errors(errors):
         COUNTS[ERRORS[err]] = errors[err]
         CATEGORIES[categorize(ERRORS[err])] += errors[err]
         SUM += errors[err]
-        
+
     RESULTS.sort(lambda a,b: cmp(COUNTS[a], COUNTS[b]))
     for r in RESULTS:
         print r,COUNTS[r],float(COUNTS[r])/float(SUM),categorize(r)

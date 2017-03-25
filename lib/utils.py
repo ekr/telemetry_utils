@@ -1,3 +1,5 @@
+from moztelemetry import Dataset
+
 def is_in_tls_experiment(ping):
     try:
         experiment = ping["environment"]["addons"]["activeExperiment"]

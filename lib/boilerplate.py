@@ -76,7 +76,6 @@ ds = Dataset.from_source('telemetry').where(docType='OTHER')
 rec = ds.records(sc)
 tls = rec.filter(lambda x: x.get("meta")["docType"] == "tls-13-study-v4")
          
-
 def tls_exp_handle_ping(accums, p):
     try:    
         if p["payload"]["status"] != "report":
@@ -132,4 +131,29 @@ def tls_status_handle_ping(accums, p):
         accums[p["payload"]["status"]].add(1)
     except:
         pass
+    
+
+HTTP_DISPOSITION_CODES = {
+    0:"HTTP:Cancel", 1:"HTTP:Disk", 2:"HTTP:NetOK", 3:"HTTP:NetEarlyFail", 4:"HTTP:NetlateFail",
+    8:"HTTPS:Cancel", 9:"HTTPS:Disk", 10:"HTTPS:NetOK", 11:"HTTPS:NetEarlyFail", 12:"HTTPS:NetlateFail"
+}
+    
+def translate_histogram(hist, table):
+    COUNTS = {}
+    RESULTS= []
+    SUM = 0
+    for err in hist:
+        string = "CODE_%d"%err
+        if err in table:
+            string = table[err]
+        RESULTS.append(string)
+        COUNTS[string] = hist[err]
+        SUM += hist[err]
+    RESULTS.sort(lambda a,b: cmp(COUNTS[a], COUNTS[b]))
+    for r in RESULTS:
+        print r,COUNTS[r],float(COUNTS[r])/float(SUM)
+            
+    print "TOTAL", SUM
+    
+
     
