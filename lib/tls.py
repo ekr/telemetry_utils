@@ -501,3 +501,94 @@ def predict_arm(x):
         return "treatment"
     else:
         return "control"
+
+HTTP_DISPOSITION_CODES = {
+    0:"HTTP:Cancel", 1:"HTTP:Disk", 2:"HTTP:NetOK", 3:"HTTP:NetEarlyFail", 4:"HTTP:NetlateFail",
+    8:"HTTPS:Cancel", 9:"HTTPS:Disk", 10:"HTTPS:NetOK", 11:"HTTPS:NetEarlyFail", 12:"HTTPS:NetlateFail"
+}
+    
+def translate_histogram(hist, table):
+    COUNTS = {}
+    RESULTS= []
+    SUM = 0
+    for err in hist:
+        string = "CODE_%d"%err
+        if err in table:
+            string = table[err]
+        RESULTS.append(string)
+        COUNTS[string] = hist[err]
+        SUM += hist[err]
+    RESULTS.sort(lambda a,b: cmp(COUNTS[a], COUNTS[b]))
+    for r in RESULTS:
+        print r,COUNTS[r],float(COUNTS[r])/float(SUM)
+            
+    print "TOTAL", SUM
+    
+
+def predict_arm(x):
+    h = hashlib.sha256(x["clientId"] + "tls13-comparison-all-v1@mozilla.org")
+    v = (struct.unpack(">L", h.digest()[0:4])[0])
+    variate = v/ 0xffffffff
+    if variate < 0.5:
+        return "treatment"
+    else:
+        return "control"
+
+
+def tls_exp_handle_ping(accums, p):
+    try:    
+        if p["payload"]["status"] != "report":
+           return
+ 
+        results = p["payload"]["results"]
+        for res in results:
+            if "status" in res and res["status"] == 200:
+                accums[res["url"]]["success"].add(1)
+            else:
+                accums[res["url"]]["failure"].add(1)
+    except:
+        accums["except"].add(1)
+        pass
+
+def tls_exp_results(pings):
+    urls = [
+        "https://enabled.tls13.com/",
+        "https://disabled.tls13.com/",
+        "https://short.tls13.com/",
+        "https://control.tls12.com/"]
+    accums = {}
+    for u in urls:
+        accums[u] = {
+            "success":sc.accumulator(0),
+            "failure":sc.accumulator(0),
+        }
+    accums["except"] = sc.accumulator(0)
+
+    pings.foreach(lambda p: tls_exp_handle_ping(accums, p))
+
+    results = {}
+    for u in urls:
+        results[u] = {
+            "success": accums[u]["success"].value,
+            "failure": accums[u]["failure"].value,
+        }
+    return [results, accums["except"].value]
+
+def tls_exp_status(pings):
+    accums = {
+        "started":sc.accumulator(0),
+        "report":sc.accumulator(0),
+        "finished":sc.accumulator(0),
+        "timedout":sc.accumulator(0),
+    }
+    pings.foreach(lambda p: tls_status_handle_ping(accums, p))
+    return accums
+
+
+def tls_status_handle_ping(accums, p):
+    try:
+        accums[p["payload"]["status"]].add(1)
+    except:
+        pass
+    
+    

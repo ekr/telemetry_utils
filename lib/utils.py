@@ -72,7 +72,7 @@ def sum_histogram_experiment(sc, pings, buckets, h, arm_func):
         accums[a] = []
         for i in range(0, buckets):
             accums[a].append(sc.accumulator(0))
-    reduced.foreach(lambda p: accum_histogram(accums, p[histogram]))
+    reduced.foreach(lambda p: accum_histogram_experiment(accums, p[histogram]))
     res = {}
     for i in range(0, buckets):
         if accums[i].value != 0:
