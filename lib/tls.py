@@ -591,4 +591,5 @@ def tls_status_handle_ping(accums, p):
     except:
         pass
     
-    
+def foo():
+    print "FOO1"
