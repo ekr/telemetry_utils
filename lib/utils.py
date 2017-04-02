@@ -72,11 +72,13 @@ def sum_histogram_experiment(sc, pings, buckets, h, arm_func):
         accums[a] = []
         for i in range(0, buckets):
             accums[a].append(sc.accumulator(0))
-    reduced.foreach(lambda p: accum_histogram_experiment(accums, p[histogram]))
+    reduced.foreach(lambda p: accum_histogram_experiment(accums, p, arm_func, histogram))
     res = {}
-    for i in range(0, buckets):
-        if accums[i].value != 0:
-            res[i] = accums[i].value
+    for a in arms:
+        res[a] = {}
+        for i in range(0, buckets):
+            if accums[a][i].value != 0:
+                res[a][i] = accums[a][i].value
     return res
 
 def get_pings_by_version(sc, channel, vernum):

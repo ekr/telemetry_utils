@@ -21,10 +21,13 @@ import utils
 sc.addPyFile("telemetry_utils/lib/tls.py")
 import tls
 
-properties_to_gather=[utils.payload("SSL_HANDSHAKE_VERSION"), utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"), utils.payload("SSL_HANDSHAKE_RESULT"), utils.payload("SSL_TLS13_INTOLERANCE_REASON_PRE"), utils.payload("HTTP_CHANNEL_DISPOSITION")]
-
-
-
+properties_to_gather=[
+    utils.payload("SSL_HANDSHAKE_VERSION"),
+    utils.payload("SSL_TLS12_INTOLERANCE_REASON_PRE"),
+    utils.payload("SSL_HANDSHAKE_RESULT"),
+    utils.payload("SSL_TLS13_INTOLERANCE_REASON_PRE"),
+    utils.payload("HTTP_CHANNEL_DISPOSITION"),
+    "clientId"]
 
 nightly_pings = (Dataset.from_source('telemetry')
                 .where(docType='main')
@@ -76,3 +79,50 @@ ds = Dataset.from_source('telemetry').where(docType='OTHER')
 rec = ds.records(sc)
 tls = rec.filter(lambda x: x.get("meta")["docType"] == "tls-13-study-v4")
          
+
+
+
+
+def in_experiment(x):
+    try:
+        if "tls13-comparison-all-v1@mozilla.org" in x["environment"]["addons"]["activeAddons"]:
+            return True
+    except:
+        return False
+
+beta53_pings = (Dataset.from_source('telemetry-sample')
+                .where(docType='main')
+                .where(appName='Firefox')
+                .where(appUpdateChannel='beta')
+                .where(appVersion=lambda x: x >= "53." and x < "54.")
+                .where(submissionDate=lambda x: x >= '20170323' and x <= '2017331')
+                .records(sc))
+beta53_exp_pings = get_pings_properties(beta53_pings.filter(in_experiment), properties_to_gather)
+res = utils.sum_histogram_experiment(sc, d, 100, "SSL_HANDSHAKE_VERSION", tls.predict_arm)      
+
+import set
+
+def get_value(h, key, s):
+    if not key in h:
+        return 0
+    else:
+        return h[key]/s
+
+def compare_branches_proportions(inp, table):
+    a = inp['control']
+    b = inp['treatment']
+    res = []
+    keys = set().union(a.keys(), b.keys())
+    suma = sum([a[k] for k in a])
+    sumb = sum([b[k] for k in b])
+    for k in keys:
+        n = "%d"%k
+        if k in table:
+            n = table[k]
+        va = get_value(a, k, suma)
+        vb = get_value(b, k, sumb)
+        res.append([n, va, vb])
+    res = sorted(res, key=lambda p: p[1])
+    return res
+
+    
