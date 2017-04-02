@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.plotly as py
 import IPython
+import hashlib
+import struct
 
 from __future__ import division
 from moztelemetry.spark import get_one_ping_per_client, get_pings_properties
@@ -28,6 +30,30 @@ properties_to_gather=[
     utils.payload("SSL_TLS13_INTOLERANCE_REASON_PRE"),
     utils.payload("HTTP_CHANNEL_DISPOSITION"),
     "clientId"]
+
+def in_experiment(x):
+    try:
+        if "tls13-comparison-all-v1@mozilla.org" in x["environment"]["addons"]["activeAddons"]:
+            return True
+    except:
+        return False
+
+beta53_pings_full = (Dataset.from_source('telemetry')
+                .where(docType='main')
+                .where(appName='Firefox')
+                .where(appUpdateChannel='beta')
+                .where(appVersion=lambda x: x >= "53." and x < "54.")
+                .where(submissionDate=lambda x: x >= '20170323' and x <= '2017331')
+                .records(sc))
+beta53_exp_pings_full = get_pings_properties(beta53_pings_full.filter(in_experiment), properties_to_gather)
+beta53_exp_pings_full.cache()
+
+
+
+
+
+
+
 
 nightly_pings = (Dataset.from_source('telemetry')
                 .where(docType='main')
@@ -83,12 +109,6 @@ tls = rec.filter(lambda x: x.get("meta")["docType"] == "tls-13-study-v4")
 
 
 
-def in_experiment(x):
-    try:
-        if "tls13-comparison-all-v1@mozilla.org" in x["environment"]["addons"]["activeAddons"]:
-            return True
-    except:
-        return False
 
 beta53_pings = (Dataset.from_source('telemetry-sample')
                 .where(docType='main')
