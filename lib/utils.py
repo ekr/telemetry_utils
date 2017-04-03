@@ -96,9 +96,9 @@ import set
 
 def get_value(h, key, s):
     if not key in h:
-        return 0
+        return [0, "-"]
     else:
-        return h[key]/s
+        return [h[key], h[key]/s]
 
 def compare_branches_proportions(inp, table):
     a = inp['control']
@@ -124,6 +124,6 @@ def run_comparison_panel(sc, pings, histograms, arm_func, trans):
         t = {}
         if trans is not None and h in trans:
             t = trans[h]
-        r = utils.sum_histogram_experiment(sc, pings, 1000, h, arm_func)
-        res[h] = utils.compare_branches_proporitions(r, t)
+        r = sum_histogram_experiment(sc, pings, 1000, h, arm_func)
+        res[h] = compare_branches_proportions(r, t)
     return res
