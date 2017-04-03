@@ -91,9 +91,6 @@ def get_pings_by_version(sc, channel, vernum):
     return get_pings_properties(p, properties_to_gather)
     
 
-
-import set
-
 def get_value(h, key, s):
     if not key in h:
         return [0, "-"]
