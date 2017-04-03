@@ -38,6 +38,15 @@ def in_experiment(x):
     except:
         return False
 
+def predict_arm(x):
+    h = hashlib.sha256(x["clientId"] + "tls13-comparison-all-v1@mozilla.org")
+    v = (struct.unpack(">L", h.digest()[0:4])[0])
+    variate = v/ 0xffffffff
+    if variate < 0.5:
+        return "treatment"
+    else:
+        return "control"
+    
 beta53_pings_full = (Dataset.from_source('telemetry')
                 .where(docType='main')
                 .where(appName='Firefox')
@@ -120,29 +129,3 @@ beta53_pings = (Dataset.from_source('telemetry-sample')
 beta53_exp_pings = get_pings_properties(beta53_pings.filter(in_experiment), properties_to_gather)
 res = utils.sum_histogram_experiment(sc, d, 100, "SSL_HANDSHAKE_VERSION", tls.predict_arm)      
 
-import set
-
-def get_value(h, key, s):
-    if not key in h:
-        return 0
-    else:
-        return h[key]/s
-
-def compare_branches_proportions(inp, table):
-    a = inp['control']
-    b = inp['treatment']
-    res = []
-    keys = set().union(a.keys(), b.keys())
-    suma = sum([a[k] for k in a])
-    sumb = sum([b[k] for k in b])
-    for k in keys:
-        n = "%d"%k
-        if k in table:
-            n = table[k]
-        va = get_value(a, k, suma)
-        vb = get_value(b, k, sumb)
-        res.append([n, va, vb])
-    res = sorted(res, key=lambda p: p[1])
-    return res
-
-    

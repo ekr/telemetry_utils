@@ -431,7 +431,34 @@ ERRORS = {
     652: "MOZILLA_PKIX_ERROR_EMPTY_ISSUER_NAME",
     671: "UNKNOWN_ERROR",
 }
-   
+
+VERSIONS = {
+    0: "UNKNOWN",
+    1: "TLS 1.0",
+    2: "TLS 1.1",
+    3: "TLS 1.2",
+    4: "TLS 1.3"
+}
+
+HTTP_RESULTS = {
+    0: "HTTP_Cancel",
+    1: "HTTP_Disk",
+    2: "HTTP_NetOK",
+    3: "HTTP_NetEarlyFail",
+    4: "HTTP_NetLateFail",
+    8: "HTTPS_Cancel",
+    9: "HTTPS_Disk",
+    10: "HTTPS_NetOK",
+    11: "HTTPS_NetEarlyFail",
+    12: "HTTPS_NetLateFail",
+}
+
+HISTOGRAM_LABELS = {
+    "SSL_HANDSHAKE_VERSION" : VERSIONS,
+    "SSL_HANDSHAKE_RESULT" : ERRORS,
+    "HTTP_CHANNEL_DISPOSITION" : HTTP_RESULTS
+}
+
 def categorize(e):
     RETRY_RESULTS = [
         "SSL_ERROR_BAD_MAC_ALERT",
@@ -592,5 +619,3 @@ def tls_status_handle_ping(accums, p):
         pass
 
 
-def foo():
-    print "FOO1"

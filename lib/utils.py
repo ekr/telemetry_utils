@@ -90,3 +90,40 @@ def get_pings_by_version(sc, channel, vernum):
          .records(sc))
     return get_pings_properties(p, properties_to_gather)
     
+
+
+import set
+
+def get_value(h, key, s):
+    if not key in h:
+        return 0
+    else:
+        return h[key]/s
+
+def compare_branches_proportions(inp, table):
+    a = inp['control']
+    b = inp['treatment']
+    res = []
+    keys = set().union(a.keys(), b.keys())
+    suma = sum([a[k] for k in a])
+    sumb = sum([b[k] for k in b])
+    for k in keys:
+        n = "%d"%k
+        if k in table:
+            n = table[k]
+        va = get_value(a, k, suma)
+        vb = get_value(b, k, sumb)
+        res.append([n, va, vb])
+    res = sorted(res, key=lambda p: p[1])
+    return res
+
+    
+def run_comparison_panel(sc, pings, histograms, arm_func, trans):
+    res = {}
+    for h in histograms:
+        t = {}
+        if trans is not None and h in trans:
+            t = trans[h]
+        r = utils.sum_histogram_experiment(sc, pings, 1000, h, arm_func)
+        res[h] = utils.compare_branches_proporitions(r, t)
+    return res
