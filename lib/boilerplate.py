@@ -31,13 +31,6 @@ properties_to_gather=[
     utils.payload("HTTP_CHANNEL_DISPOSITION"),
     "clientId"]
 
-def in_experiment(x):
-    try:
-        if "tls13-comparison-all-v1@mozilla.org" in x["environment"]["addons"]["activeAddons"]:
-            return True
-    except:
-        return False
-
 def predict_arm(x):
     h = hashlib.sha256(x["clientId"] + "tls13-comparison-all-v1@mozilla.org")
     v = (struct.unpack(">L", h.digest()[0:4])[0])
@@ -46,7 +39,7 @@ def predict_arm(x):
         return "treatment"
     else:
         return "control"
-    
+
 beta53_pings_full = (Dataset.from_source('telemetry')
                 .where(docType='main')
                 .where(appName='Firefox')
@@ -58,6 +51,30 @@ beta53_exp_pings_full = get_pings_properties(beta53_pings_full.filter(in_experim
 beta53_exp_pings_full.cache()
 
 
+beta53_pings_sample = (Dataset.from_source('telemetry-sample')
+                .where(docType='main')
+                .where(appName='Firefox')
+                .where(appUpdateChannel='beta')
+                .where(appVersion=lambda x: x >= "53." and x < "54.")
+                .where(submissionDate=lambda x: x >= '20170323' and x <= '2017331')
+                .records(sc))
+beta53_exp_pings_sample = get_pings_properties(beta53_pings_sample.filter(in_experiment), properties_to_gather)
+beta53_exp_pings_sample.cache()
+
+
+beta53_pings_old = (Dataset.from_source('telemetry')
+                .where(docType='main')
+                .where(appName='Firefox')
+                .where(appUpdateChannel='beta')
+                .where(appVersion=lambda x: x >= "53." and x < "54.")
+                .where(submissionDate=lambda x: x >= '20170310' and x <= '2017320')
+                .records(sc))
+beta53_all_pings_old = get_pings_properties(beta53_pings_old, properties_to_gather)
+beta53_all_pings_old.cache()
+
+
+sample_results = utils.run_comparison_panel(sc, beta53_exp_pings_sample, histograms, predict_arm, tls.HISTOGRAM_LABELS)
+full_results = utils.run_comparison_panel(sc, beta53_exp_pings_full, histograms, predict_arm, tls.HISTOGRAM_LABELS)
 
 
 

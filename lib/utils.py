@@ -124,3 +124,55 @@ def run_comparison_panel(sc, pings, histograms, arm_func, trans):
         r = sum_histogram_experiment(sc, pings, 1000, h, arm_func)
         res[h] = compare_branches_proportions(r, t)
     return res
+
+def merge_normalize_client_reports(sc, pings, h):
+    histogram = payload(h)
+    reduced = pings.filter(lambda p: filter_for_histogram(p, histogram))
+    grouped = reduced.map(lambda x: (x['clientId'], x[histogram])).groupByKey()
+    aggregated = grouped.map(lambda x: (x[0], reduce(lambda a,b: a+b, x[1])))
+    normalized = aggregated.map(lambda x: { "clientId": x[0], histogram: x[1]/sum(x[1])})
+    return normalized
+                                                                                     
+def sum_histogram_experiment_by_client(sc, pings, buckets, h, arm_func):
+    histogram = payload(h)
+    accums = {}
+    arms = ["control", "treatment"]
+    for a in arms:
+        accums[a] = []
+        for i in range(0, buckets):
+            accums[a].append(sc.accumulator(0))
+    merged = merge_normalize_client_reports(sc, pings, h)
+    merged.foreach(lambda p: accum_histogram_experiment(accums, p, arm_func, histogram))
+    res = {}
+    for a in arms:
+        res[a] = {}
+        for i in range(0, buckets):
+            if accums[a][i].value != 0:
+                res[a][i] = accums[a][i].value
+    return res
+
+def run_comparison_panel_by_client(sc, pings, histograms, arm_func, trans):
+    res = {}
+    for h in histograms:
+        t = {}
+        if trans is not None and h in trans:
+            t = trans[h]
+        r = sum_histogram_experiment_by_client(sc, pings, 1000, h, arm_func)
+        res[h] = compare_branches_proportions(r, t)
+    return res
+
+def render_compared_histogram(d):
+    format = row_format ="{:<40} {:>20} {:>20}"
+    print format.format("", "Control", "Treatment")
+    for j in d:
+        print format.format(j[0], j[1][1], j[2][1])
+        
+
+def sample_by_client_id(x, label, frac):
+    h = hashlib.sha256(x["clientId"] + label)
+    v = (struct.unpack(">L", h.digest()[0:4])[0])
+    variate = v/ 0xffffffff
+    if variate < frac:
+        return True
+    else:
+        return False

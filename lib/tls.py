@@ -618,4 +618,10 @@ def tls_status_handle_ping(accums, p):
     except:
         pass
 
+def in_experiment(x):
+    try:
+        if "tls13-comparison-all-v1@mozilla.org" in x["environment"]["addons"]["activeAddons"]:
+            return True
+    except:
+        return False
 
