@@ -75,9 +75,9 @@ A pile of stuff you won't want that lets you process TLS experiments,
 but also ```tls.HISTOGRAM_LABELS``` contains a map table for bucket names
 for the following histograms.
 
-* SSL_HANDSHAKE_VERSION"
-* "SSL_HANDSHAKE_RESULT"
-* "HTTP_CHANNEL_DISPOSITION"
+* SSL_HANDSHAKE_VERSION
+* SSL_HANDSHAKE_RESULT
+* HTTP_CHANNEL_DISPOSITION
 
 
 
