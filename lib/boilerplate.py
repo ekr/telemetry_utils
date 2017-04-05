@@ -45,9 +45,9 @@ beta53_pings_full = (Dataset.from_source('telemetry')
                 .where(appName='Firefox')
                 .where(appUpdateChannel='beta')
                 .where(appVersion=lambda x: x >= "53." and x < "54.")
-                .where(submissionDate=lambda x: x >= '20170323' and x <= '2017331')
+                .where(submissionDate=lambda x: x >= '20170323' and x <= '20170403')
                 .records(sc))
-beta53_exp_pings_full = get_pings_properties(beta53_pings_full.filter(in_experiment), properties_to_gather)
+beta53_exp_pings_full = get_pings_properties(beta53_pings_full.filter(tls.in_experiment), properties_to_gather)
 beta53_exp_pings_full.cache()
 
 
@@ -56,9 +56,9 @@ beta53_pings_sample = (Dataset.from_source('telemetry-sample')
                 .where(appName='Firefox')
                 .where(appUpdateChannel='beta')
                 .where(appVersion=lambda x: x >= "53." and x < "54.")
-                .where(submissionDate=lambda x: x >= '20170323' and x <= '2017331')
+                .where(submissionDate=lambda x: x >= '20170323' and x <= '20170403')
                 .records(sc))
-beta53_exp_pings_sample = get_pings_properties(beta53_pings_sample.filter(in_experiment), properties_to_gather)
+beta53_exp_pings_sample = get_pings_properties(beta53_pings_sample.filter(tls.in_experiment), properties_to_gather)
 beta53_exp_pings_sample.cache()
 
 
@@ -67,14 +67,17 @@ beta53_pings_old = (Dataset.from_source('telemetry')
                 .where(appName='Firefox')
                 .where(appUpdateChannel='beta')
                 .where(appVersion=lambda x: x >= "53." and x < "54.")
-                .where(submissionDate=lambda x: x >= '20170310' and x <= '2017320')
+                .where(submissionDate=lambda x: x >= '20170310' and x <= '20170320')
                 .records(sc))
 beta53_all_pings_old = get_pings_properties(beta53_pings_old, properties_to_gather)
 beta53_all_pings_old.cache()
 
 
-sample_results = utils.run_comparison_panel(sc, beta53_exp_pings_sample, histograms, predict_arm, tls.HISTOGRAM_LABELS)
-full_results = utils.run_comparison_panel(sc, beta53_exp_pings_full, histograms, predict_arm, tls.HISTOGRAM_LABELS)
+histograms_to_study = ["SSL_HANDSHAKE_RESULT", "SSL_HANDSHAKE_VERSION", "HTTP_CHANNEL_DISPOSITION"]
+
+
+sample_results = utils.run_comparison_panel_by_client(sc, beta53_exp_pings_sample, histograms_to_study, predict_arm, tls.HISTOGRAM_LABELS)
+full_results = utils.run_comparison_panel_by_client(sc, beta53_exp_pings_full, histograms_to_study, predict_arm, tls.HISTOGRAM_LABELS)
 
 
 
@@ -141,8 +144,10 @@ beta53_pings = (Dataset.from_source('telemetry-sample')
                 .where(appName='Firefox')
                 .where(appUpdateChannel='beta')
                 .where(appVersion=lambda x: x >= "53." and x < "54.")
-                .where(submissionDate=lambda x: x >= '20170323' and x <= '2017331')
+                .where(submissionDate=lambda x: x >= '20170323' and x <= '20170331')
                 .records(sc))
 beta53_exp_pings = get_pings_properties(beta53_pings.filter(in_experiment), properties_to_gather)
 res = utils.sum_histogram_experiment(sc, d, 100, "SSL_HANDSHAKE_VERSION", tls.predict_arm)      
 
+
+histograms_to_study = ["SSL_HANDSHAKE_RESULT", "SSL_HANDSHAKE_VERSION", "HTTP_CHANNEL_DISPOSITION"]

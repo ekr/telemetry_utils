@@ -10,4 +10,26 @@ sc.addPyFile("telemetry_utils/lib/tls.py")
 import tls
 ```
 
+This consists of two main modules:
+
+* utils -- stuff which is supposed to be generic
+* tls -- stuff which is supposed to be TLS-specific
+
+The factoring is not really that clean. I also don't guarantee that
+these implementations are really the right ones.
+
+There is also a top-level file called boilerplate.py that I use to
+store working state for whatever I'm doing now.
+
+
+What's available is roughly:
+
+# Utils
+
+
+
+
+
+
+
 
