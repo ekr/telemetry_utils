@@ -64,20 +64,16 @@ def getSecurityState(d):
         return -1
 
 def process(dataset, channel, begin, end):
-    d = (dataset.where(docType='OTHER')
+    d = (dataset.where(docType='tls13-middlebox-repetition')
          .where(appName='Firefox')
          .where(appUpdateChannel=channel)
          .where(submissionDate=lambda x: x >= begin and x <= end))
     print "Got dataset filtered"
-    records = d.records(sc)
-    print "Got records"
-    logs = records.filter(lambda x: x["meta"]["docType"] == "tls13-middlebox-beta")
+    logs = d.records(sc)
     print "Logs count ", logs.count()
     finished = logs.filter(lambda x: x["payload"]["status"] == "finished")
     print "Finished count ", finished.count()
     return [finished, summarize(finished)]
-
-
 
 
 ### STUFF TO RUN
