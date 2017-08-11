@@ -65,19 +65,25 @@ def getSecurityState(d):
 
 def process(dataset, channel, begin, end):
     d = (dataset.where(docType='tls13-middlebox-repetition')
-         .where(appName='Firefox')
-         .where(appUpdateChannel=channel)
-         .where(submissionDate=lambda x: x >= begin and x <= end))
-    print "Got dataset filtered"
+                .where(appName='Firefox')
+                .where(appUpdateChannel=channel)
+                .where(submissionDate=lambda x: x >= begin and x <= end))
+
     logs = d.records(sc)
-    print "Logs count ", logs.count()
+    started = logs.filter(lambda x: x["payload"]["status"] == "started")
+    aborted = logs.filter(lambda x: x["payload"]["status"] == "aborted")
     finished = logs.filter(lambda x: x["payload"]["status"] == "finished")
-    print "Finished count ", finished.count()
-    return [finished, summarize(finished)]
+
+    print "No. of Logs", logs.count()
+    print "No. of Started: %d", started.count()
+    print "No. of Aborted: %d", aborted.count()
+    print "No. of Finished: %d", finished.count()
+
+    #return [finished, summarize(finished)]
 
 
 ### STUFF TO RUN
 
 dataset = Dataset.from_source('telemetry')
-process(dataset, "beta", "20170701", "20170718")
-process(dataset, "beta", "20170701", "20170806")
+process(dataset, "nigthly", "20170701", "20170901")
+
