@@ -1,5 +1,5 @@
 
-import ujson as json
+import json
 from moztelemetry import Dataset
 
 DISABLED_FP = "55:45:DD:2D:5A:C8:E4:55:8A:F4:09:62:5A:2D:45:0A:85:17:0D:6F:F1:BF:3A:01:14:13:88:7F:CA:E3:4A:DF"
@@ -18,6 +18,24 @@ WEBSITES = [
     NO_TLS_WEBSITE
 ]
 
+error_messages = {}
+
+def translateError(status, error_code):
+    if status in [0, None] and error_code in [0, None]:
+        return None
+    
+    msg = []
+    
+    if status != 0 and status in error_messages:
+        msg.extend(error_messages[status])
+
+    if error_code != 0 and error_code in error_messages:
+        for m in error_messages[error_code]:
+            if m not in msg:
+                msg.append(m)
+
+    return ','.join(msg)
+
 def isTestSucceeded(test):
     if test is None:
         return None
@@ -35,62 +53,66 @@ def findTestByWebsite(x, website):
         
     return None
 
-def categorize(x):
-    tls13_enabled = isTestSucceeded(findTestByWebsite(x, ENABLED_WEBSITE))
-    tls13_disabled = isTestSucceeded(findTestByWebsite(x, DISABLED_WEBSITE))
-    
-    if tls13_enabled is None or tls13_disabled is None:
-        return "unknown"
-    
-    if tls13_enabled:
-        if tls13_disabled:
-            return "both_succeed"
-        else:
-            return "tls13_succeeds"
-    else:
-        if tls13_disabled:
-            return "tls12_succeeds"
-        else:
-            return "both_fail"
-
-def summarize(d):
-    categorized = d.map(lambda x: categorize(x)).countByValue().items()
-    df = pd.DataFrame(categorized, columns = ["Case", "Count"])
-    df["Fraction"] = df["Count"] / sum(df["Count"])
-    return df
-
-
-def isBuiltInRoot(x):
-    return not find_test(x, "enabled.tls13.com")["isBuiltInRoot"]
-
-def getTestByWebsite(x, website):
-    for t in x["payload"]["tests"]:
-        if t["website"] == website:
-            return t
-
-    return None
-
 def filterLogsByStatus(logs, status_list):
     return logs.filter(lambda x: x["payload"]["status"] in status_list)
 
 def analyzeSuccess(logs):
+    def categorizeSuccess(x):
+        tls13_enabled = isTestSucceeded(findTestByWebsite(x, ENABLED_WEBSITE))
+        tls13_disabled = isTestSucceeded(findTestByWebsite(x, DISABLED_WEBSITE))
+
+        if tls13_enabled is None or tls13_disabled is None:
+            return "unknown"
+
+        if tls13_enabled:
+            if tls13_disabled:
+                return "Both Succeeded"
+            else:
+                return "Only TLS 1.3 Succeeded"
+        else:
+            if tls13_disabled:
+                return "Only TLS 1.2 Succeeded"
+            else:
+                return "Both Failed"
+
     finished_logs = filterLogsByStatus(logs, ["finished"])
     
-    success = finished_logs.map(lambda x: categorize(x)).countByValue()
+    success = finished_logs.map(lambda x: categorizeSuccess(x)).countByValue()
     
-    print "Success", json.dumps(success)
+    print "Success: ", jsonToString(success)
+
+def analyzeErrors(logs):
+    def categorizeError(x):
+        res = set()
+        
+        for test in x["payload"]["tests"]:
+            for result in test["results"]:
+                status = result["status"] if "status" in result else None
+                error_code = result["errorCode"] if "errorCode" in result else None
+
+                res.add(translateError(status, error_code))
+                
+        res.discard(None)
+        
+        return list(res)
+
+    finished_logs = filterLogsByStatus(logs, ["finished"])
+    
+    errors = finished_logs.flatMap(lambda x: categorizeError(x)).countByValue()
+    
+    print "Errors: ", jsonToString(errors)
+
+def isNonBuiltInRootCertInstalled(x):
+    if "isNonBuiltInRootCertInstalled" in x["payload"]:
+        return x["payload"]["isNonBuiltInRootCertInstalled"]
+    else:
+        return None
 
 def analyzeNonBuiltInRootCerts(logs):
-    def isNonBuiltInRootCertInstalled(x):
-        if "isNonBuiltInRootCertInstalled" in x["payload"]:
-            return x["payload"]["isNonBuiltInRootCertInstalled"]
-        else:
-            return None
-
     aborted_finished_logs = filterLogsByStatus(logs, ["aborted", "finished"])
     nonbuiltin_root_cert = aborted_finished_logs.map(lambda x: isNonBuiltInRootCertInstalled(x)).countByValue()
     
-    print "isNonBuiltInRootCertInstalled: ", json.dumps(nonbuiltin_root_cert)
+    print "isNonBuiltInRootCertInstalled: ", jsonToString(nonbuiltin_root_cert)
 
 def countLogs(logs):
     logs_status = logs.map(lambda x: x["payload"]["status"]).countByValue()
@@ -101,7 +123,7 @@ def countLogs(logs):
     
     logs_status["failure"] = logs_status["started"] - (aborted_count + logs_status["finished"])
     
-    print "Logs Count: ", json.dumps(logs_status)
+    print "Logs Count: ", jsonToString(logs_status)
 
 def fetchLogs(channel, begin, end):
     dataset = Dataset.from_source('telemetry')
@@ -115,12 +137,27 @@ def fetchLogs(channel, begin, end):
 
     return logs
 
+def jsonToString(data):
+    return json.dumps(data, indent=4, separators=(',', ': '))
+
 if __name__ == "__main__":
+    # load error codes and their descriptions
+    with open("error_types.txt", "r") as f:
+        for line in f:
+            tokens = line.strip().split()
+
+            if int(tokens[0], 16) not in error_messages:
+                error_messages[int(tokens[0], 16)] = []
+
+            error_messages[int(tokens[0], 16)].append(tokens[1])
+
+    # fetch all the logs from a channel
     logs = fetchLogs("nightly", "20170701", "20170901")
     
     countLogs(logs)
     analyzeNonBuiltInRootCerts(logs)
     analyzeSuccess(logs)
+    analyzeErrors(logs)
 
 
 
