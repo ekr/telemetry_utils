@@ -1,4 +1,8 @@
 
+# coding: utf-8
+
+# In[4]:
+
 import json
 from moztelemetry import Dataset
 
@@ -36,16 +40,6 @@ def translateError(status, error_code):
 
     return ','.join(msg)
 
-def isTestSucceeded(test):
-    if test is None:
-        return None
-    
-    for r in test["results"]:
-        if r["event"] in ["load", "loadend"]:
-            return True
-
-    return False
-
 def findTestByWebsite(x, website):
     for t in x["payload"]["tests"]:
         if t["website"] == website:
@@ -56,10 +50,10 @@ def findTestByWebsite(x, website):
 def filterLogsByStatus(logs, status_list):
     return logs.filter(lambda x: x["payload"]["status"] in status_list)
 
-def analyzeSuccess(logs):
+def analyzeSuccess(logs, successCriteria):
     def categorizeSuccess(x):
-        tls13_enabled = isTestSucceeded(findTestByWebsite(x, ENABLED_WEBSITE))
-        tls13_disabled = isTestSucceeded(findTestByWebsite(x, DISABLED_WEBSITE))
+        tls13_enabled = successCriteria(findTestByWebsite(x, ENABLED_WEBSITE))
+        tls13_disabled = successCriteria(findTestByWebsite(x, DISABLED_WEBSITE))
 
         if tls13_enabled is None or tls13_disabled is None:
             return "unknown"
@@ -112,18 +106,19 @@ def analyzeNonBuiltInRootCerts(logs):
     aborted_finished_logs = filterLogsByStatus(logs, ["aborted", "finished"])
     nonbuiltin_root_cert = aborted_finished_logs.map(lambda x: isNonBuiltInRootCertInstalled(x)).countByValue()
     
-    print "isNonBuiltInRootCertInstalled: ", jsonToString(nonbuiltin_root_cert)
+    print "Clients installed non-builtin root cert? %d (%.1f%%)" % (                    nonbuiltin_root_cert[True],
+                    nonbuiltin_root_cert[True] * 100.0 / sum(nonbuiltin_root_cert.values()))
 
-def countLogs(logs):
+def analyzeCount(logs):
     logs_status = logs.map(lambda x: x["payload"]["status"]).countByValue()
     
     logs_status["total"] = logs.count()
     
     aborted_count = logs_status["aborted"] if "aborted" in logs_status else 0
     
-    logs_status["failure"] = logs_status["started"] - (aborted_count + logs_status["finished"])
+    logs_status["failed (no aborted nor finished received)"] = logs_status["started"] - (aborted_count + logs_status["finished"])
     
-    print "Logs Count: ", jsonToString(logs_status)
+    print "Count: ", jsonToString(logs_status)
 
 def fetchLogs(channel, begin, end):
     dataset = Dataset.from_source('telemetry')
@@ -140,6 +135,26 @@ def fetchLogs(channel, begin, end):
 def jsonToString(data):
     return json.dumps(data, indent=4, separators=(',', ': '))
 
+def successCriteriaAtLeastOne(test):
+    if test is None:
+        return None
+    
+    for r in test["results"]:
+        if r["event"] in ["load", "loadend"]:
+            return True
+
+    return False
+
+def successCriteriaFirstOne(test):
+    if test is None:
+        return None
+    
+    if len(test["results"]) > 0:
+        if test["results"][0]["event"] in ["load", "loadend"]:
+            return True
+
+    return False
+
 if __name__ == "__main__":
     # load error codes and their descriptions
     with open("error_types.txt", "r") as f:
@@ -153,13 +168,28 @@ if __name__ == "__main__":
 
     # fetch all the logs from a channel
     logs = fetchLogs("nightly", "20170701", "20170901")
-    
-    countLogs(logs)
+
+    analyzeCount(logs)
     analyzeNonBuiltInRootCerts(logs)
-    analyzeSuccess(logs)
     analyzeErrors(logs)
 
+    print '\n\n'
 
+    print "------- Analysis with at least one success out of 5 tries"
+    analyzeSuccess(logs, successCriteriaAtLeastOne)
+
+    print '\n\n'
+
+    print "------- Analysis with the first successful try"
+    analyzeSuccess(logs, successCriteriaFirstOne)
+
+
+# In[ ]:
+
+
+
+
+# In[ ]:
 
 
 
