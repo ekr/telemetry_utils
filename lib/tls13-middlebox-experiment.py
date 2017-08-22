@@ -1,8 +1,3 @@
-
-# coding: utf-8
-
-# In[4]:
-
 import json
 from moztelemetry import Dataset
 
@@ -73,7 +68,12 @@ def analyzeSuccess(logs, successCriteria):
     
     success = finished_logs.map(lambda x: categorizeSuccess(x)).countByValue()
     
-    print "Success: ", jsonToString(success)
+    total = sum(success.values())
+    
+    for k in success:
+        success[k] = "%d (%.1f%%)" % (success[k], success[k] * 100.0 / total)
+    
+    print "Success: %s\n\n" % jsonToString(success)
 
 def analyzeErrors(logs):
     def categorizeError(x):
@@ -94,7 +94,7 @@ def analyzeErrors(logs):
     
     errors = finished_logs.flatMap(lambda x: categorizeError(x)).countByValue()
     
-    print "Errors: ", jsonToString(errors)
+    print "Errors: %s\n\n" % jsonToString(errors)
 
 def isNonBuiltInRootCertInstalled(x):
     if "isNonBuiltInRootCertInstalled" in x["payload"]:
@@ -106,7 +106,7 @@ def analyzeNonBuiltInRootCerts(logs):
     aborted_finished_logs = filterLogsByStatus(logs, ["aborted", "finished"])
     nonbuiltin_root_cert = aborted_finished_logs.map(lambda x: isNonBuiltInRootCertInstalled(x)).countByValue()
     
-    print "Clients installed non-builtin root cert? %d (%.1f%%)" % (                    nonbuiltin_root_cert[True],
+    print "Installed non-builtin root cert: %d (%.1f%%)\n\n" % (                    nonbuiltin_root_cert[True],
                     nonbuiltin_root_cert[True] * 100.0 / sum(nonbuiltin_root_cert.values()))
 
 def analyzeCount(logs):
@@ -116,9 +116,13 @@ def analyzeCount(logs):
     
     aborted_count = logs_status["aborted"] if "aborted" in logs_status else 0
     
-    logs_status["failed (no aborted nor finished received)"] = logs_status["started"] - (aborted_count + logs_status["finished"])
+    logs_status["failed"] = logs_status["started"] - (aborted_count + logs_status["finished"])
+        
+    for k in logs_status:
+        if k != "total":
+            logs_status[k] = "%d (%.1f%%)" % (logs_status[k], logs_status[k] * 100.0 / logs_status["total"])
     
-    print "Count: ", jsonToString(logs_status)
+    print "Count: %s\n\n" % jsonToString(logs_status)
 
 def fetchLogs(channel, begin, end):
     dataset = Dataset.from_source('telemetry')
@@ -173,23 +177,9 @@ if __name__ == "__main__":
     analyzeNonBuiltInRootCerts(logs)
     analyzeErrors(logs)
 
-    print '\n\n'
-
     print "------- Analysis with at least one success out of 5 tries"
     analyzeSuccess(logs, successCriteriaAtLeastOne)
 
-    print '\n\n'
-
     print "------- Analysis with the first successful try"
     analyzeSuccess(logs, successCriteriaFirstOne)
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
 
