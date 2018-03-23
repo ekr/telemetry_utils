@@ -520,15 +520,6 @@ def translate_errors(errors):
     print
     print "TOTAL", SUM
 
-
-def predict_arm(x):
-    h = hashlib.sha256(x["clientId"] + "tls13-comparison-all-v1@mozilla.org")
-    variate = (struct.unpack(">L", h.digest()[0:4])[0]) / 0xffffffff
-    if variate < 0.5:
-        return "treatment"
-    else:
-        return "control"
-
 HTTP_DISPOSITION_CODES = {
     0:"HTTP:Cancel", 1:"HTTP:Disk", 2:"HTTP:NetOK", 3:"HTTP:NetEarlyFail", 4:"HTTP:NetlateFail",
     8:"HTTPS:Cancel", 9:"HTTPS:Disk", 10:"HTTPS:NetOK", 11:"HTTPS:NetEarlyFail", 12:"HTTPS:NetlateFail"

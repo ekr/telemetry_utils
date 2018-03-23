@@ -127,7 +127,7 @@ def analyzeCount(logs):
 def fetchLogs(channel, begin, end):
     dataset = Dataset.from_source('telemetry')
 
-    d = (dataset.where(docType="tls13-middlebox-repetition")
+    d = (dataset.where(docType="tls13-middlebox-alt-server-hello-1")
                 .where(appName="Firefox")
                 .where(appUpdateChannel=channel)
                 .where(submissionDate=lambda x: x >= begin and x <= end))
@@ -159,6 +159,31 @@ def successCriteriaFirstOne(test):
 
     return False
 
+
+def findTestByLabel(x, label):
+    for t in x["payload"]["tests"]:
+        if t["label"] == label:
+            return t
+        
+    return None
+
+def rawCountSuccess(logs, successCriteria, label):
+    finished_logs = filterLogsByStatus(logs, ["finished"])
+    
+    success = finished_logs.map(lambda x: successCriteria(findTestByLabel(x, label))).countByValue()
+    
+    total = sum(success.values())
+    
+    for k in success:
+        success[k] = "%d (%.1f%%)" % (success[k], success[k] * 100.0 / total)
+    
+    print "Success: %s\n\n" % jsonToString(success)
+
+
+    
+
+    
+
 if __name__ == "__main__":
     # load error codes and their descriptions
     with open("error_types.txt", "r") as f:
@@ -182,4 +207,5 @@ if __name__ == "__main__":
 
     print "------- Analysis with the first successful try"
     analyzeSuccess(logs, successCriteriaFirstOne)
+
 

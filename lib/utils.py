@@ -1,5 +1,7 @@
 from moztelemetry import Dataset
-
+from moztelemetry.spark import get_one_ping_per_client, get_pings_properties
+import hashlib
+import struct
 
 # A filter that safely determines whether a ping has a histogram
 # in it.
@@ -212,3 +214,42 @@ def sample_by_client_id(x, label, frac):
         return True
     else:
         return False
+
+
+# Compare statistics between two study arms
+def run_analysis(sc, ver, channel, sample, start, end, in_exp_func, arm_func, histograms_to_study, trans):
+    if sample:
+        s = "telemetry-sample"
+    else:
+        s = "telemetry"
+    ds = (Dataset.from_source(s)
+          .where(docType='main')
+          .where(appName='Firefox')
+          .where(appUpdateChannel=channel)
+          .where(appVersion=lambda x: x >= "%d."%ver and x < "%d."%(ver+1))
+          .where(submissionDate=lambda x: x >= start and x <= end)
+          .records(sc))
+    in_exp_raw = ds.filter(in_exp_func)
+    in_exp_raw.cache()
+    properties_to_gather = [payload(x) for x in histograms_to_study]
+    properties_to_gather.append("clientId")
+    in_exp = get_pings_properties(in_exp_raw, properties_to_gather)
+    in_exp.cache()
+    results = run_comparison_panel_by_client(sc, in_exp, histograms_to_study, arm_func, trans)
+    return [[in_exp, in_exp_raw], results]
+
+
+# Print an analysis
+def print_analysis(a):
+    for h in a[1]:
+        render_compared_histogram(a[1][h])
+
+# Predict an arm
+def predict_arm(x, label, fraction):
+    h = hashlib.sha256(x["clientId"] + label)
+    v = (struct.unpack(">L", h.digest()[0:4])[0])
+    variate = float(v)/ 0xffffffff
+    if variate < fraction:
+        return "treatment"
+    else:
+        return "control"
