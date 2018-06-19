@@ -543,16 +543,6 @@ def translate_histogram(hist, table):
     print "TOTAL", SUM
     
 
-def predict_arm(x):
-    h = hashlib.sha256(x["clientId"] + "tls13-comparison-all-v1@mozilla.org")
-    v = (struct.unpack(">L", h.digest()[0:4])[0])
-    variate = v/ 0xffffffff
-    if variate < 0.5:
-        return "treatment"
-    else:
-        return "control"
-
-
 def tls_exp_handle_ping(accums, p):
     try:    
         if p["payload"]["status"] != "report":
