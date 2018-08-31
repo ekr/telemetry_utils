@@ -231,9 +231,11 @@ def run_analysis(sc, ver, channel, sample, start, end, in_exp_func, arm_func, hi
           .records(sc))
     in_exp_raw = ds.filter(in_exp_func)
     num_pings = ds.count()
+    print "Raw pings=%d"%num_pings
     in_exp_raw.cache()
     properties_to_gather = [payload(x) for x in histograms_to_study]
     properties_to_gather.append("clientId")
+    properties_to_gather.append("environment/experiments")    
     in_exp = get_pings_properties(in_exp_raw, properties_to_gather)
     in_exp.cache()
     num_exp_pings = in_exp.count()
